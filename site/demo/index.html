@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Griffin in CityKit</title>
+<meta name="description" content="Walk or fly through Griffin, Georgia, rebuilt by CityKit from OpenStreetMap and USGS 3DEP data.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400&family=Public+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="demo.css">
+</head>
+<body data-mode="fly">
+<canvas id="view" tabindex="0" aria-label="Griffin, Georgia, in 3D. Drag to look around; use W A S D or the arrow keys to move."></canvas>
+
+<aside id="panel" data-open>
+  <div class="panel-head">
+    <a class="back" href="../">CityKit</a>
+    <button id="panel-toggle" class="icon" aria-expanded="true" aria-controls="panel-body" aria-label="Show or hide controls">☰</button>
+  </div>
+  <div id="panel-body">
+    <h1>Griffin, Georgia</h1>
+    <p id="coverage" class="data">Loading…</p>
+    <div class="modes" role="group" aria-label="How to move">
+      <button id="walk" aria-pressed="false">Walk</button>
+      <button id="fly" aria-pressed="true">Fly</button>
+    </div>
+    <label for="place">Go to</label>
+    <select id="place"></select>
+    <p class="hint">Drag to look. W A S D or arrows to move. Shift is faster.<br><span class="fly-only">Space or E to rise, Z or Q to descend.</span></p>
+    <p id="notice" role="status"></p>
+    <p id="status" class="data" role="status">Loading…</p>
+  </div>
+</aside>
+
+<div class="pad" aria-hidden="true">
+  <button data-key="KeyW" tabindex="-1">▲</button>
+  <button data-key="KeyA" tabindex="-1">◀</button><button data-key="KeyS" tabindex="-1">▼</button><button data-key="KeyD" tabindex="-1">▶</button>
+  <button data-key="Space" class="fly-only" tabindex="-1">Up</button><button data-key="KeyZ" class="fly-only" tabindex="-1">Down</button>
+</div>
+
+<footer>
+  <span id="location" class="where">Above downtown</span>
+  <span id="position" class="data"></span>
+  <span class="credit">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · Elevation and lidar: <a href="https://www.usgs.gov/3d-elevation-program" target="_blank" rel="noopener">USGS 3DEP</a></span>
+</footer>
+
+<div id="splash">
+  <p class="eyebrow">33° 14′ 48″ N · 84° 15′ 51″ W</p>
+  <h2>Griffin, Georgia</h2>
+  <p id="progress">Starting…</p>
+</div>
+<noscript><p class="noscript">The Griffin demo needs JavaScript and WebGL2.</p></noscript>
+<script type="module" src="app.js"></script>
+</body>
+</html>
