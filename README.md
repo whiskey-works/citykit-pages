@@ -7,6 +7,8 @@ This repository holds built output only: a static site that GitHub Pages serves 
 - `site/index.html`: what CityKit is, and where Griffin's data comes from.
 - `site/demo/`: Griffin, Georgia, in 3D. Walk the streets or fly over the town (WebGL2).
 - `site/data/griffin/`: Griffin's streaming export, the cells the demo loads as you move.
+- `site/onkyo/`: the Onkyō Atlas, a fictional city generated entirely by CityKit. It uses no map data, so the ODbL
+  does not apply to it; like the site's code, it is all rights reserved.
 
 ## Licences
 

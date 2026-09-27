@@ -37,6 +37,7 @@ h2{margin:0 0 10px;font:600 26px/1.1 var(--display);letter-spacing:.04em;text-tr
 table{width:100%;border-collapse:collapse;font-size:15px;min-width:520px}
 th{text-align:left;font:600 12px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--ink-2);padding:10px 12px 8px 0;border-bottom:1px solid var(--line)}
 td{padding:10px 12px 10px 0;border-bottom:1px solid var(--line);vertical-align:top}
+.also p{margin:0;max-width:70ch}
 .note{max-width:70ch;margin:14px 0 0;font-size:14px;color:var(--ink-2)}
 
 .foot{max-width:1120px;margin:0 auto;display:flex;flex-wrap:wrap;justify-content:space-between;gap:6px 16px;padding-block:16px 24px;border-top:1px solid var(--line);font-size:13px;color:var(--ink-2)}
