@@ -5,7 +5,6 @@ import {openBuildingStream} from '../citykit/building-stream.mjs';
 import {loadSignAtlas} from '../citykit/facade-three.mjs';
 import {KTX2Loader} from 'three/addons/loaders/KTX2Loader.js';
 import {ThreeCityAdapter,toRender} from '../citykit/three-adapter.mjs';
-import {createProxyFacadeMaterial} from '../citykit/proxy-facade.mjs';
 import {CityNavigator,heightAt,insideBuilding} from '../citykit/navigation.mjs';
 
 const $=id=>document.getElementById(id);
@@ -16,9 +15,9 @@ const BUILDINGS=new URL(`../data/${CITY}/buildings/hierarchy.json`,location.href
 const FAR=CITY==='onkyo'?new URL('../data/onkyo/far/hierarchy.json',location.href):null;
 const SIGNS=new URL(`../data/${CITY}/signs/`,location.href);
 const keys=new Set(),taps=new Set(),held=new Set();
-let place,manifest,fallback,adapter,proxyFacade,city,farCity,navigator,renderer,scene,camera,sun,ambient,ktx,signAtlas,last=0,lastUI=0,drag=null,lighting='golden',siteMapMarker,siteMapPosition;
-let lastBuildingSwaps=-1,lastFarSwaps=-1,buildingNodes,farNodes;
-const cells=new Map(); // Legacy massing stays visible until the first prepared CityKit cover arrives.
+let place,manifest,fallback,adapter,city,farCity,navigator,renderer,scene,camera,sun,ambient,ktx,signAtlas,last=0,lastUI=0,drag=null,lighting='golden',siteMapMarker,siteMapPosition;
+let lastBuildingSwaps=-1,lastFarSwaps=-1,buildingNodes;
+const cells=new Map(); // Building bounds remain available for navigation and the site map, never as visible geometry.
 const MOVE=new Set(['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','Space','KeyZ','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
 
 function cellAt(x,y){const s=manifest.cell_m;return cells.get(`${Math.floor(x/s)}:${Math.floor(y/s)}`);}
@@ -94,7 +93,6 @@ function go(id){const p=PLACES[id];if(!p)return;p.go();$('place').value=id;$('lo
 
 function setLighting(value){
   lighting=value;const night=value==='night';
-  proxyFacade?.setNight(night);
   $('day').setAttribute('aria-pressed',!night);$('night').setAttribute('aria-pressed',night);
   const clock={night:night?1:0,electric_gain:night?1:0,sun_az:235,sun_el:night?-8:14,sun:night?0:1,
     schedule:{residential:.55,early:.3,office:.3,nightlife:1,industrial:.3,suburban:.45}};
@@ -114,9 +112,6 @@ function frame(time){
   farCity?.update({position:p,velocity:navigator.velocity});
   if(city&&(city.streamer.swaps!==lastBuildingSwaps||farCity?.streamer.swaps!==lastFarSwaps)){
     lastBuildingSwaps=city.streamer.swaps;lastFarSwaps=farCity?.streamer.swaps??-1;
-    const nearCut=[...city.streamer.cut].map(id=>buildingNodes.get(id)).filter(Boolean);
-    const fine=nearCut.filter(n=>['L0','L1','L2'].includes(n.level));
-    const coarse=nearCut.filter(n=>n.level==='L3');
     // Both exports come from one hierarchy. Hide a far page only when the central
     // cut has prepared the same node (or its finer descendants), never on bounds overlap.
     for(const id of farCity?.streamer.cut||[]){
@@ -127,26 +122,6 @@ function frame(time){
         const near=buildingNodes.get(nearId),own=city.streamer.ranges.get(nearId);
         return near&&['L0','L1','L2','L3'].includes(near.level)&&own&&range[0]<=own[0]&&own[0]<range[1];
       });
-    }
-    for(const id of farCity?.streamer.cut||[]){
-      const record=farCity.streamer.records.get(id);
-      if(record?.node.level==='L3'&&record.handle?.group.visible!==false)coarse.push(record.node);
-    }
-    const size=manifest.cell_m;
-    for(const cell of fallback.cells){
-      const [x,y]=cell.origin,generated=cell.buildings.filter(b=>!b.site);
-      const covers=nodes=>{
-        const candidates=nodes.filter(n=>{const b=n.bounds;return b[0]<x+size&&b[3]>x&&b[1]<y+size&&b[4]>y;});
-        return generated.length>0&&generated.every(building=>{
-          const px=x+building.x,py=y+building.y;
-          return candidates.some(n=>{const b=n.bounds;return b[0]<=px&&px<=b[3]&&b[1]<=py&&py<=b[4];});
-        });
-      };
-      const state=covers(fine)?'fine':covers(coarse)?'coarse':'fallback';
-      // Keep facade-covered massing only where no prepared hierarchy page exists.
-      for(const mesh of adapter.proxies.get(cell.id).children)if(!mesh.userData.citySite){
-        mesh.visible=state==='fallback';mesh.material=proxyFacade.material;
-      }
     }
   }
   camera.position.set(...toRender(p));
@@ -191,9 +166,10 @@ async function main(){
   ambient=new THREE.HemisphereLight(0xffe6c5,0x514c48,1.4);scene.add(ambient);
   sun=new THREE.DirectionalLight(0xffcf91,2.9);sun.position.set(-500,240,320);scene.add(sun);
   camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.3,30000);
-  adapter=new ThreeCityAdapter(scene,manifest,fallback);
-  proxyFacade=createProxyFacadeMaterial(THREE);
-  for(const group of adapter.proxies.values())for(const mesh of group.children)if(!mesh.userData.citySite)mesh.material=proxyFacade.material;
+  // Keep the source building bounds for navigation and map outlines, but do not
+  // construct the unrelated legacy box silhouettes in the public scene.
+  const visualFallback={...fallback,cells:fallback.cells.map(cell=>({...cell,buildings:[]}))};
+  adapter=new ThreeCityAdapter(scene,manifest,visualFallback);
   navigator=new CityNavigator({surface,blocked});
   const b=manifest.coverage.bounds;
   $('coverage').textContent=`${((b[2]-b[0])/1000).toFixed(1)} × ${((b[3]-b[1])/1000).toFixed(1)} km · generated buildings`;
@@ -217,7 +193,6 @@ async function main(){
       surfaceAt:(x,y)=>ground(x,y),concurrency:outer?6:2,uploadBudgetMs:3});
     [city,farCity]=await Promise.all([open(BUILDINGS),FAR?open(FAR,true):Promise.resolve(null)]);
     buildingNodes=new Map(city.manifest.nodes.map(node=>[node.id,node]));
-    farNodes=farCity?new Map(farCity.manifest.nodes.map(node=>[node.id,node])):null;
     $('coverage').textContent=`${((b[2]-b[0])/1000).toFixed(1)} × ${((b[3]-b[1])/1000).toFixed(1)} km · ${city.manifest.source.buildings.toLocaleString('en-US')} ${CITY==='onkyo'?'central':'generated'} buildings`;
     setLighting(lighting);
     signAtlas=await loadSignAtlas(THREE,SIGNS.href,{ktx2Loader:ktx});
@@ -246,7 +221,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();taps.clear();held.clear();drag=null;});
-addEventListener('pagehide',()=>{void city?.close();void farCity?.close();ktx?.dispose();signAtlas?.dispose();proxyFacade?.material.dispose();});
+addEventListener('pagehide',()=>{void city?.close();void farCity?.close();ktx?.dispose();signAtlas?.dispose();adapter?.dispose();});
 addEventListener('resize',()=>{if(!renderer)return;renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 if(innerWidth<640){$('panel').removeAttribute('data-open');$('panel-toggle').setAttribute('aria-expanded','false');}
 main().catch(fail);

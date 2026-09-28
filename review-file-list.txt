@@ -1,4 +1,4 @@
-Public site: 5169 files, 722269635 bytes
+Public site: 5167 files, 719253670 bytes
 Size (bytes)	Path relative to site/
 0	.nojekyll
 26	CNAME
@@ -2048,7 +2048,6 @@ Size (bytes)	Path relative to site/
 5555	data/griffin/buildings/blobs/850af3833ad2370906dfeac36d80ecce632556985516f47a5efdcfe21a14763d.json
 15862	data/griffin/buildings/blobs/851ddc1e3cf20e9a68b1c36e8de5bb6280d3546ddb8516646047f60458a3ad36.ktx2
 4606	data/griffin/buildings/blobs/853660698efa027bf5439e42e0ef7ba79fc4ae98faa8cc01c649692b2e1f1e67.json
-949244	data/griffin/buildings/blobs/8544680594f5d3766079cd406927fb0ab59a67ea973c26326d6e7054234c1570.glb
 202908	data/griffin/buildings/blobs/8567b92e19c11e9b808581313614b99f81b77901d518467fb6123d570684a8b1.glb
 172	data/griffin/buildings/blobs/856d0cc3b059d2ca132fcc5742b05326acf034aa88725a18cc3da18adf513802.glb
 123608	data/griffin/buildings/blobs/859fb92a8d6c91f7b5a1b185659464481895bfdede452917010d0533b5d305a3.glb
@@ -2979,7 +2978,7 @@ Size (bytes)	Path relative to site/
 83264	data/griffin/buildings/blobs/ffc44c7e100a1d946e9e53bd4f811747f25ece5a3c75e48cba736806a78575c5.glb
 13216	data/griffin/buildings/blobs/ffc852df5511cee8c43db407b10532a03e02babc2335e1bbad3c06f6c160c7cd.ktx2
 210992	data/griffin/buildings/blobs/ffeb5a79ded009287c71c52426742b45a5f434390566d59cb5b2d7ac2dfc3086.glb
-1173962	data/griffin/buildings/hierarchy.json
+1173631	data/griffin/buildings/hierarchy.json
 399237	data/griffin/manifest.json
 255	data/griffin/place.json
 121640	data/griffin/signs/signs.json
@@ -3109,7 +3108,6 @@ Size (bytes)	Path relative to site/
 49152	data/onkyo/buildings/blobs/3e13422bb5ca954981789c81c15c50b8a1755f6b3aeb5b9830c00bbeceba5ec4.f32
 21820	data/onkyo/buildings/blobs/3e3076aa9e21b7904761df63b10c862e3f22584f7cee82e0a1a46aedd371eb11.json
 413368	data/onkyo/buildings/blobs/3e7d75d64b7317c8b7632708668575ca135c4748c4f5104b3ddf83242b0e13fc.glb
-2062872	data/onkyo/buildings/blobs/3eea9a5e6d1561fc88706e445b7b9dcac13139d5c675b0d127b768c7b049e3b1.glb
 240421	data/onkyo/buildings/blobs/3f6f8ac1e193d5f35f75f79fe8de241e8aaa9105c5abab8c5e3edd77b5518b3f.ktx2
 118556	data/onkyo/buildings/blobs/4199b5164fa999433dbaec5b0168e050c4737d3684cafa9ea1d243acb0f20199.glb
 41032	data/onkyo/buildings/blobs/41b562105411ea038a4e28eadac1f119bad972f0343d9ff4c3f90bc708479042.ktx2
@@ -3516,7 +3514,7 @@ Size (bytes)	Path relative to site/
 1804084	data/onkyo/buildings/blobs/fe8379b7b65a73a5e9e0181ea41cc22d2ee3dba6566489fc6979bf3142421588.glb
 11410	data/onkyo/buildings/blobs/ff87e5057a5afcc1c73adb935880c2fbc5c0d3aa6d1f96aa79572f37876eadd7.json
 16384	data/onkyo/buildings/blobs/ffbd8e4df8c1469c37d863ee6b0b84b8825523c4984604504c9317528161ebd2.f32
-301918	data/onkyo/buildings/hierarchy.json
+301585	data/onkyo/buildings/hierarchy.json
 49152	data/onkyo/far/blobs/005d319b9ee3be8fe67d1b4f7ce811a261e3a656902bb36dda0b619e45854aca.f32
 319440	data/onkyo/far/blobs/00994b13c396e27704196c3ff573e90648d80d97bc717d2ea8a08febd3747972.glb
 332352	data/onkyo/far/blobs/00f816c3f0da4b6af8ea4f89dcb920b11bf317b4152485cfa36ee018b93906c7.glb
@@ -5156,12 +5154,12 @@ Size (bytes)	Path relative to site/
 131565	data/onkyo/signs/signs.json
 10316881	data/onkyo/signs/signs.ktx2
 1169	demo/THIRD-PARTY-NOTICES.txt
-971749	demo/app.js
+968560	demo/app.js
 57536	demo/basis/basis_transcoder.js
 527333	demo/basis/basis_transcoder.wasm
 3686	demo/building-worker.mjs
 5089	demo/demo.css
-5082	demo/index.html
+5086	demo/index.html
 24848	demo/meshopt_decoder.module.js
 370	favicon.svg
 179888	img/griffin-hero.jpg

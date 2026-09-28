@@ -5,7 +5,7 @@ The public demo site for CityKit, at **https://citykit.technoascetic.com**.
 GitHub Pages serves the static output in `site/`. The viewer entry point lives in `src/demo/app.mjs`.
 
 - `site/index.html`: what CityKit is, and where Griffin's data comes from.
-- `site/demo/`: Griffin, Georgia, in 3D. Walk the streets or fly over the town (WebGL2).
+- `site/demo/`: Griffin and Onkyō in 3D. Walk the streets or fly over each city (WebGL2).
 - `site/data/griffin/`: Griffin's streaming export, the cells the demo loads as you move.
 - `site/data/onkyo/`: Onkyō's public central cut and distant textured L3 pages, with the existing city backdrop beyond them.
 - `site/onkyo/`: the Onkyō Atlas, a fictional city generated entirely by CityKit. It uses no map data, so the ODbL
@@ -26,3 +26,10 @@ carries metadata. The deploy workflow runs it before publishing.
 To rebuild the viewer, run `npm ci` and then `sh scripts/build-viewer.sh /path/to/CityKit`. The script copies
 CityKit's streaming runtime into a temporary build directory and bundles the viewer and worker into `site/demo/`.
 The built assets remain committed so deployment does not need the CityKit checkout.
+
+The public packages contain only representative L0–L3 building geometry. After a
+CityKit rebuild, run `scripts/strip-structural-massing.py` on each published
+`buildings/` or `far/` hierarchy: it retains the streaming tree but empties its
+box-shaped GROUP/HORIZON covers and removes the independent box horizon ring.
+The viewer also omits the older fallback building meshes; their source bounds
+remain available for walking collision and the Onkyō site-map outlines.

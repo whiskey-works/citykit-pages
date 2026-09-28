@@ -1,7 +1,8 @@
-"""Keep distant textured L3 pages and let the existing city backdrop cover beyond them.
+"""Publish only representative building LOD geometry in the Pages demos.
 
-This is a Pages packaging step; the CityKit hierarchy still supplies the tree
-structure, but no GROUP, HORIZON or resident-ring geometry is published.
+The CityKit hierarchy still supplies the tree and its streaming policy. GROUP,
+HORIZON and the resident ring are structural covers whose merged box shapes are
+not representative of L0-L3, so their geometry is omitted from this public cut.
 """
 import argparse
 import hashlib
@@ -33,7 +34,7 @@ def main():
     if empty['bytes'] != empty_path.stat().st_size or hashlib.sha256(empty_path.read_bytes()).hexdigest() != empty['sha256']:
         raise ValueError('The root is not a verified empty cover')
     if len(manifest['nodes']) <= 1 or not any(node['level'] == 'L3' for node in manifest['nodes']):
-        raise ValueError('No far L3 pages to publish')
+        raise ValueError('No textured L3 pages to publish')
     replaced = 0
     for node in manifest['nodes']:
         if node['level'] in ('GROUP', 'HORIZON'):
@@ -51,7 +52,7 @@ def main():
         if f'blobs/{path.name}' not in refs:
             path.unlink()
             removed += 1
-    print(f'Far L3: {replaced} structural covers emptied, {ring_count} resident rings omitted, '
+    print(f'Textured LODs: {replaced} structural covers emptied, {ring_count} resident rings omitted, '
           f'{removed} unused blobs removed, {len(refs)} resources retained')
 
 
