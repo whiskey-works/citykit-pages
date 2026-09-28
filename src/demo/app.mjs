@@ -12,6 +12,7 @@ const $=id=>document.getElementById(id);
 const CITY=new URLSearchParams(location.search).get('city')==='onkyo'?'onkyo':'griffin';
 const MANIFEST=new URL(`../data/${CITY}/manifest.json`,location.href);
 const BUILDINGS=new URL(`../data/${CITY}/buildings/hierarchy.json`,location.href);
+// The public Onkyō cut ends at textured L3; the existing city backdrop covers beyond it.
 const FAR=CITY==='onkyo'?new URL('../data/onkyo/far/hierarchy.json',location.href):null;
 const SIGNS=new URL(`../data/${CITY}/signs/`,location.href);
 const keys=new Set(),taps=new Set(),held=new Set();
@@ -209,9 +210,10 @@ async function main(){
     const low=performanceProfile==='low',mib=1024**2;
     const open=(url,outer=false)=>openBuildingStream({manifestURL:url.href,renderer,scene,camera,ktx2Loader:ktx,
       decoderURL:new URL('./meshopt_decoder.module.js',import.meta.url).href,performanceProfile,tier:'low',
-      ...(FAR?{budgetBytes:low?(outer?1000:700)*mib:2*1024**3,
-        ...(low?{refineRadii:outer?{L1:80,L2:300,L3:900,HORIZON:1400}:
-          {L1:80,L2:300,L3:700,HORIZON:1200}}:{})}:{}),
+      ...(FAR?{budgetBytes:low?(outer?850:650)*mib:2*1024**3,
+        ...(outer?{refineRadii:low?{L1:80,L2:300,L3:900,HORIZON:6000}:
+          {L1:150,L2:600,L3:1800,HORIZON:6000}}:
+          low?{refineRadii:{L1:80,L2:300,L3:900,HORIZON:1200}}:{})}:{}),
       surfaceAt:(x,y)=>ground(x,y),concurrency:outer?6:2,uploadBudgetMs:3});
     [city,farCity]=await Promise.all([open(BUILDINGS),FAR?open(FAR,true):Promise.resolve(null)]);
     buildingNodes=new Map(city.manifest.nodes.map(node=>[node.id,node]));

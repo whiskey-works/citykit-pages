@@ -5,7 +5,7 @@
 set -u
 PY=${PYTHON:-python3}
 DIR=${1:-site}
-PAT='claude\.ai/|/Users/|/home/|/nix/store|/tmp/|/private/var|[A-Za-z]:\\Users|file://|\b10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\b|\b192\.168\.[0-9]|\b172\.(1[6-9]|2[0-9]|3[01])\.[0-9]|localhost|127\.0\.0\.1|\.local\b|\.lan\b|\.internal\b|\.blend\b'
+PAT='claude\.ai/|git\.srvlab\.io|srvlab|r740xd|gaymer|rbuild|asset-library|CityKit-data|re-chord|rechord|/micron/|environments/onkyo|[Pp]enthouse|[Ss]tatue|[Tt]erminus|CharKit|/Users/|/home/|/nix/store|/tmp/|/private/var|[A-Za-z]:\\Users|file://|\b10\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\b|\b192\.168\.[0-9]|\b172\.(1[6-9]|2[0-9]|3[01])\.[0-9]|localhost|127\.0\.0\.1|\.local\b|\.lan\b|\.internal\b|\.blend\b'
 fail=0
 echo "scrub: text over $(find "$DIR" -type f | wc -l | tr -d ' ') files in $DIR"
 hits=$(grep -rIEn "$PAT" "$DIR" | cut -c1-200)
