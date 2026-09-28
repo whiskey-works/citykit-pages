@@ -5,6 +5,7 @@ import {openBuildingStream} from '../citykit/building-stream.mjs';
 import {loadSignAtlas} from '../citykit/facade-three.mjs';
 import {KTX2Loader} from 'three/addons/loaders/KTX2Loader.js';
 import {ThreeCityAdapter,toRender} from '../citykit/three-adapter.mjs';
+import {createProxyFacadeMaterial} from '../citykit/proxy-facade.mjs';
 import {CityNavigator,heightAt,insideBuilding} from '../citykit/navigation.mjs';
 
 const $=id=>document.getElementById(id);
@@ -14,7 +15,7 @@ const BUILDINGS=new URL(`../data/${CITY}/buildings/hierarchy.json`,location.href
 const FAR=CITY==='onkyo'?new URL('../data/onkyo/far/hierarchy.json',location.href):null;
 const SIGNS=new URL(`../data/${CITY}/signs/`,location.href);
 const keys=new Set(),taps=new Set(),held=new Set();
-let place,manifest,fallback,adapter,ghostProxyMaterial,city,farCity,navigator,renderer,scene,camera,sun,ambient,ktx,signAtlas,last=0,lastUI=0,drag=null,lighting='golden',siteMapMarker,siteMapPosition;
+let place,manifest,fallback,adapter,proxyFacade,city,farCity,navigator,renderer,scene,camera,sun,ambient,ktx,signAtlas,last=0,lastUI=0,drag=null,lighting='golden',siteMapMarker,siteMapPosition;
 let lastBuildingSwaps=-1,lastFarSwaps=-1,buildingNodes,farNodes;
 const cells=new Map(); // Legacy massing stays visible until the first prepared CityKit cover arrives.
 const MOVE=new Set(['KeyW','KeyA','KeyS','KeyD','KeyQ','KeyE','Space','KeyZ','ShiftLeft','ShiftRight','ArrowUp','ArrowDown','ArrowLeft','ArrowRight']);
@@ -92,6 +93,7 @@ function go(id){const p=PLACES[id];if(!p)return;p.go();$('place').value=id;$('lo
 
 function setLighting(value){
   lighting=value;const night=value==='night';
+  proxyFacade?.setNight(night);
   $('day').setAttribute('aria-pressed',!night);$('night').setAttribute('aria-pressed',night);
   const clock={night:night?1:0,electric_gain:night?1:0,sun_az:235,sun_el:night?-8:14,sun:night?0:1,
     schedule:{residential:.55,early:.3,office:.3,nightlife:1,industrial:.3,suburban:.45}};
@@ -140,10 +142,9 @@ function frame(time){
         });
       };
       const state=covers(fine)?'fine':covers(coarse)?'coarse':'fallback';
-      // Coarse bounds are only a hint: keep translucent massing until the exact
-      // near-cell cover arrives, so an incomplete distant page cannot make a void.
+      // Keep facade-covered massing only where no prepared hierarchy page exists.
       for(const mesh of adapter.proxies.get(cell.id).children)if(!mesh.userData.citySite){
-        mesh.visible=state!=='fine';mesh.material=state==='coarse'?ghostProxyMaterial:adapter.buildingMaterial;
+        mesh.visible=state==='fallback';mesh.material=proxyFacade.material;
       }
     }
   }
@@ -155,7 +156,7 @@ function frame(time){
     lastUI=time;const s=combinedStats(),g=ground(p[0],p[1]);
     $('position').textContent=`${p[0].toFixed(0)} m E · ${p[1].toFixed(0)} m N · ${g===null?'—':(p[2]-g).toFixed(0)+' m above ground'}`;
     if(siteMapMarker){const [x,y]=siteMapPosition(p[0],p[1]);siteMapMarker.setAttribute('cx',x);siteMapMarker.setAttribute('cy',y);}
-    $('status').textContent=s?`${s.unmetDesired?`Refining · ${s.unmetDesired} areas waiting`:'Detail ready'} · ${city.performanceProfile} tier`:'Massing ready · loading building detail';
+    $('status').textContent=s?`${s.unmetDesired?`Refining · ${s.unmetDesired} areas waiting`:'Detail ready'} · ${city.performanceProfile} tier`:'Textured city ready · loading building detail';
     if(navigator.mode==='walk')$('notice').textContent=navigator.lastBlock||'Walking follows the ground. Buildings block the way.';
   }
 }
@@ -190,7 +191,8 @@ async function main(){
   sun=new THREE.DirectionalLight(0xffcf91,2.9);sun.position.set(-500,240,320);scene.add(sun);
   camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.3,30000);
   adapter=new ThreeCityAdapter(scene,manifest,fallback);
-  ghostProxyMaterial=adapter.buildingMaterial.clone();ghostProxyMaterial.transparent=true;ghostProxyMaterial.opacity=.32;ghostProxyMaterial.depthWrite=false;
+  proxyFacade=createProxyFacadeMaterial(THREE);
+  for(const group of adapter.proxies.values())for(const mesh of group.children)if(!mesh.userData.citySite)mesh.material=proxyFacade.material;
   navigator=new CityNavigator({surface,blocked});
   const b=manifest.coverage.bounds;
   $('coverage').textContent=`${((b[2]-b[0])/1000).toFixed(1)} × ${((b[3]-b[1])/1000).toFixed(1)} km · generated buildings`;
@@ -207,10 +209,10 @@ async function main(){
     const low=performanceProfile==='low',mib=1024**2;
     const open=(url,outer=false)=>openBuildingStream({manifestURL:url.href,renderer,scene,camera,ktx2Loader:ktx,
       decoderURL:new URL('./meshopt_decoder.module.js',import.meta.url).href,performanceProfile,tier:'low',
-      ...(FAR?{budgetBytes:low?(outer?686:850)*mib:2*1024**3,
-        ...(low?{refineRadii:outer?{L1:80,L2:300,L3:600,HORIZON:900}:
+      ...(FAR?{budgetBytes:low?(outer?1000:700)*mib:2*1024**3,
+        ...(low?{refineRadii:outer?{L1:80,L2:300,L3:900,HORIZON:1400}:
           {L1:80,L2:300,L3:700,HORIZON:1200}}:{})}:{}),
-      surfaceAt:(x,y)=>ground(x,y),concurrency:2,uploadBudgetMs:3});
+      surfaceAt:(x,y)=>ground(x,y),concurrency:outer?6:2,uploadBudgetMs:3});
     [city,farCity]=await Promise.all([open(BUILDINGS),FAR?open(FAR,true):Promise.resolve(null)]);
     buildingNodes=new Map(city.manifest.nodes.map(node=>[node.id,node]));
     farNodes=farCity?new Map(farCity.manifest.nodes.map(node=>[node.id,node])):null;
@@ -242,7 +244,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();taps.clear();held.clear();drag=null;});
-addEventListener('pagehide',()=>{void city?.close();void farCity?.close();ktx?.dispose();signAtlas?.dispose();ghostProxyMaterial?.dispose();});
+addEventListener('pagehide',()=>{void city?.close();void farCity?.close();ktx?.dispose();signAtlas?.dispose();proxyFacade?.material.dispose();ghostProxyFacade?.material.dispose();});
 addEventListener('resize',()=>{if(!renderer)return;renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 if(innerWidth<640){$('panel').removeAttribute('data-open');$('panel-toggle').setAttribute('aria-expanded','false');}
 main().catch(fail);
