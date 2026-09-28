@@ -244,7 +244,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();taps.clear();held.clear();drag=null;});
-addEventListener('pagehide',()=>{void city?.close();void farCity?.close();ktx?.dispose();signAtlas?.dispose();proxyFacade?.material.dispose();ghostProxyFacade?.material.dispose();});
+addEventListener('pagehide',()=>{void city?.close();void farCity?.close();ktx?.dispose();signAtlas?.dispose();proxyFacade?.material.dispose();});
 addEventListener('resize',()=>{if(!renderer)return;renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 if(innerWidth<640){$('panel').removeAttribute('data-open');$('panel-toggle').setAttribute('aria-expanded','false');}
 main().catch(fail);
