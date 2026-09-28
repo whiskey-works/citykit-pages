@@ -2,11 +2,12 @@
 
 The public demo site for CityKit, at **https://citykit.technoascetic.com**.
 
-This repository holds built output only: a static site that GitHub Pages serves from `site/`.
+GitHub Pages serves the static output in `site/`. The viewer entry point lives in `src/demo/app.mjs`.
 
 - `site/index.html`: what CityKit is, and where Griffin's data comes from.
 - `site/demo/`: Griffin, Georgia, in 3D. Walk the streets or fly over the town (WebGL2).
 - `site/data/griffin/`: Griffin's streaming export, the cells the demo loads as you move.
+- `site/data/onkyo/`: Onkyō's public central cut and distant building pages.
 - `site/onkyo/`: the Onkyō Atlas, a fictional city generated entirely by CityKit. It uses no map data, so the ODbL
   does not apply to it; like the site's code, it is all rights reserved.
 
@@ -21,3 +22,7 @@ This repository holds built output only: a static site that GitHub Pages serves 
 
 `scripts/scrub-check.sh site` fails if a shipped file names an internal host, address or path, or if any image
 carries metadata. The deploy workflow runs it before publishing.
+
+To rebuild the viewer, run `npm ci` and then `sh scripts/build-viewer.sh /path/to/CityKit`. The script copies
+CityKit's streaming runtime into a temporary build directory and bundles the viewer and worker into `site/demo/`.
+The built assets remain committed so deployment does not need the CityKit checkout.

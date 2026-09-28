@@ -1,0 +1,12 @@
+{
+  "name": "citykit-pages-build",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "three": "0.180.0"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10",
+    "puppeteer-core": "^24.43.1"
+  }
+}
