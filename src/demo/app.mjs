@@ -182,7 +182,7 @@ async function main(){
   try{
     ktx=new KTX2Loader().setTranscoderPath(new URL('./basis/',import.meta.url).href).setWorkerLimit(2).detectSupport(renderer);
     const memory=globalThis.navigator.deviceMemory||0,requested=new URLSearchParams(location.search).get('profile');
-    const performanceProfile=requested||((memory&&memory<=8)||innerWidth<1600?'low':'desktop');
+    const performanceProfile=requested||((memory&&memory<=4)||(navigator.maxTouchPoints>0&&innerWidth<900)?'low':'desktop');
     const low=performanceProfile==='low',mib=1024**2;
     const open=(url,outer=false)=>openBuildingStream({manifestURL:url.href,renderer,scene,camera,ktx2Loader:ktx,
       decoderURL:new URL('./meshopt_decoder.module.js',import.meta.url).href,performanceProfile,tier:'low',
