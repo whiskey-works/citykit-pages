@@ -10,6 +10,8 @@ GitHub Pages serves the static output in `site/`. The viewer entry point lives i
 - `site/data/onkyo/`: Onkyō's public central cut and distant textured L3 pages, with the existing city backdrop beyond them.
 - `site/onkyo/`: the Onkyō Atlas, a fictional city generated entirely by CityKit. It uses no map data, so the ODbL
   does not apply to it; like the site's code, it is all rights reserved.
+- `tools/full-city-train/`: a local-only full-loop train viewer and packaging recipe. Its generated city data stays
+  outside `site/` and is not deployed to Pages.
 
 ## Licences
 
