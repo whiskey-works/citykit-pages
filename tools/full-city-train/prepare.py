@@ -99,6 +99,9 @@ def main() -> None:
     p.add_argument("--blob-root", type=Path, help="directory holding the hierarchy's blobs/ (defaults to hierarchy parent)")
     p.add_argument("--fallback-manifest", type=Path, required=True, help="full-city CityKit streaming manifest.json")
     p.add_argument("--route", type=Path, required=True, help="CityKit transit export with the Nyamanote loop")
+    p.add_argument("--fleet", type=Path, required=True, help="built rolling-stock fleet.json with Nyamanote cars")
+    p.add_argument("--city-terrain", type=Path, help="optional city-terrain.json and its published pages")
+    p.add_argument("--skyline", type=Path, help="optional skyline.json from the same city build")
     p.add_argument("--out", type=Path, required=True, help="local preview directory, outside site/")
     p.add_argument("--l3", type=float, default=1800)
     p.add_argument("--l2", type=float, default=350)
@@ -107,6 +110,8 @@ def main() -> None:
     p.add_argument("--horizon", type=float, default=2500)
     p.add_argument("--fallback-radius", type=float, default=2000)
     args = p.parse_args()
+    if bool(args.city_terrain) != bool(args.skyline):
+        raise ValueError("Pass both --city-terrain and --skyline from the same build")
     out = args.out.resolve()
     if out == PAGES or PAGES in out.parents:
         raise ValueError("Preview output must be outside the Pages repository")
@@ -114,6 +119,19 @@ def main() -> None:
     loop = next((r for r in route["routes"] if r.get("id") == "loop/inner"), None)
     if loop is None:
         raise ValueError("Transit export has no loop/inner route")
+    fleet = json.loads(args.fleet.read_text())
+    consist = fleet.get("consists", {}).get("nyamanote")
+    if not consist:
+        raise ValueError("Rolling-stock fleet has no nyamanote consist")
+    stock_dir = out / "rolling-stock"
+    stock_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(args.fleet, stock_dir / "fleet.json")
+    for asset in {row["asset"] for row in consist["cars"]}:
+        manifest = Path(fleet["cars"][asset])
+        if manifest.is_absolute() or ".." in manifest.parts:
+            raise ValueError(f"Invalid rolling-stock path: {manifest}")
+        source_dir = args.fleet.parent / manifest.parent
+        shutil.copytree(source_dir, stock_dir / manifest.parent, dirs_exist_ok=True)
     points = loop["points"][::10] + loop["points"][-1:]
     source = json.loads(args.hierarchy.read_text())
     by_id = {n["id"]: n for n in source["nodes"]}
@@ -179,6 +197,15 @@ def main() -> None:
     (fb_dir / "manifest.json").write_bytes(encode(fallback))
     shutil.copy2(HERE / "place.json", fb_dir / "place.json")
     shutil.copy2(args.route, out / "train-route.json")
+    if args.city_terrain:
+        horizon = out / "horizon"
+        horizon.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(args.city_terrain, horizon / "city-terrain.json")
+        for folder in ("pages", "blobs"):
+            source = args.city_terrain.parent / folder
+            if source.is_dir():
+                shutil.copytree(source, horizon / folder, dirs_exist_ok=True)
+        shutil.copy2(args.skyline, horizon / "skyline.json")
     demo = out / "demo"
     demo.mkdir(parents=True, exist_ok=True)
     for name in ("index.html", "demo.css"):

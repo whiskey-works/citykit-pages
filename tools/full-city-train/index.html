@@ -61,6 +61,15 @@
       <p class="hint">Chase: drag to orbit, scroll to zoom. Passenger: drag to look.</p>
       <p id="train-status" class="data"></p><p id="train-progress" class="data"></p>
     </section>
+    <section id="far-layer-panel" hidden>
+      <label for="far-layer">Experimental far city</label>
+      <select id="far-layer" aria-label="Far city layer">
+        <option value="far">Beyond nearby detail</option>
+        <option value="full">Whole height field</option>
+        <option value="off">Off · compare</option>
+      </select>
+      <p class="hint" id="far-layer-status">City terrain begins beyond nearby textured buildings.</p>
+    </section>
     <details id="site-map" hidden><summary>Site map · outlines only</summary><svg id="site-outlines" role="img" aria-label="Onkyō site footprints and current position" viewBox="0 0 300 220"></svg></details>
     <p class="hint">Drag to look. W A S D or arrows to move. Shift is faster.<br><span class="fly-only">Space or E to rise, Z or Q to descend.</span></p>
     <p class="hint" id="placeholder-note">Buildings and signs: CityKit's Japan set, used as a placeholder. A US set is coming.</p>
@@ -87,6 +96,6 @@
   <p id="progress">Starting…</p>
 </div>
 <noscript><p class="noscript">The Griffin demo needs JavaScript and WebGL2.</p></noscript>
-<script type="module" src="app.js?v=5"></script>
+<script type="module" src="app.js?v=7"></script>
 </body>
 </html>

@@ -8,6 +8,9 @@ import {ThreeCityAdapter,toRender} from '../citykit/three-adapter.mjs';
 import {CityNavigator,heightAt,insideBuilding} from '../citykit/navigation.mjs';
 import {RailRoute,TrainJourney} from '../citykit/transit.mjs';
 import {RailwayView,TrainView} from '../citykit/transit-three.mjs';
+import {StockLibrary} from '../citykit/rolling-stock-three.mjs';
+import {openCityTerrain} from '../citykit/city-terrain.mjs';
+import {openSkyline} from '../citykit/skyline.mjs';
 
 const $=id=>document.getElementById(id);
 const CITY=new URLSearchParams(location.search).get('city')==='onkyo'?'onkyo':'griffin';
@@ -16,9 +19,14 @@ const MANIFEST=new URL(`../data/${DATA}/manifest.json`,location.href);
 const BUILDINGS=new URL(`../data/${DATA}/buildings/hierarchy.json?v=train-textured-2`,location.href);
 const FAR=null;
 const SIGNS=new URL(`../data/${DATA}/signs/`,location.href);
+const TERRAIN=new URL('../horizon/city-terrain.json',location.href);
+const SKYLINE=new URL('../horizon/skyline.json',location.href);
+const FLEET=new URL('../rolling-stock/fleet.json',location.href);
 const keys=new Set(),taps=new Set(),held=new Set();
-let place,manifest,fallback,adapter,city,farCity,navigator,renderer,scene,camera,sun,ambient,ktx,signAtlas,last=0,lastUI=0,drag=null,lighting='golden',siteMapMarker,siteMapPosition;
-let journey,trainView,railway,rideCamera=null,rideRate=1;
+let place,manifest,fallback,adapter,city,farCity,navigator,renderer,scene,camera,sun,ambient,ktx,signAtlas,last=0,lastUI=0,lastFarUpdate=0,drag=null,lighting='golden',siteMapMarker,siteMapPosition;
+let journey,trainView,stockLibrary,railway,rideCamera=null,rideRate=1;
+let cityTerrain,skyline,farLayerMode='far';
+const FAR_RING_M=700,FAR_BLEND_M=300,FAR_RADIUS_M=6500;
 const rideLook={yaw:0,pitch:0};
 const CHASE_DEFAULT={yaw:Math.atan2(65,140),pitch:Math.atan2(30,Math.hypot(140,65)),distance:Math.hypot(140,65,30)};
 const chaseLook={...CHASE_DEFAULT};
@@ -104,9 +112,40 @@ function setLighting(value){
   const clock={night:night?1:0,electric_gain:night?1:0,sun_az:235,sun_el:night?-8:14,sun:night?0:1,
     schedule:{residential:.55,early:.3,office:.3,nightlife:1,industrial:.3,suburban:.45}};
   city?.time(clock);farCity?.time(clock);
+  cityTerrain?.time(clock);skyline?.time(clock);
   sun.intensity=night?0:2.9;ambient.intensity=night?.10:1.4;
   renderer.toneMappingExposure=night?4:1.15;
   const sky=new THREE.Color(night?0x10192a:0xe8bd8e);scene.background=sky;scene.fog.color.copy(sky);
+}
+
+function setFarLayerMode(mode){
+  farLayerMode=mode;
+  const near=mode==='full'?0:mode==='off'?1e9:FAR_RING_M;
+  const blend=mode==='far'?FAR_BLEND_M:1;
+  cityTerrain?.setNearDistance(near,blend);
+  skyline?.setNearDistance(near,blend);
+  $('far-layer').value=mode;
+  $('far-layer-status').textContent=mode==='far'?'City terrain begins beyond nearby textured buildings.':
+    mode==='full'?'Whole height field shown for comparison; nearby buildings may overlap.':
+    'Experimental far layer hidden.';
+}
+
+async function openFarLayers(){
+  if(CITY!=='onkyo')return;
+  try{
+    cityTerrain=await openCityTerrain({manifestURL:TERRAIN.href,scene,
+      maxResidentBytes:new URLSearchParams(location.search).get('profile')==='low'?320*1024**2:512*1024**2,
+      radiusM:FAR_RADIUS_M,nearDistanceM:FAR_RING_M,blendWidthM:FAR_BLEND_M,
+      coarseTexelSizesM:[32,64],levelDistancesM:[100,700,1800,6000,10000]});
+    skyline=await openSkyline({manifestURL:SKYLINE.href,scene,
+      nearDistanceM:FAR_RING_M,blendWidthM:FAR_BLEND_M,farDistanceM:FAR_RADIUS_M});
+    $('far-layer-panel').hidden=false;
+    setFarLayerMode(farLayerMode);
+    setLighting(lighting);
+  }catch(error){
+    cityTerrain?.close();cityTerrain=null;skyline?.close();skyline=null;
+    console.error('Far-city preview unavailable',error);
+  }
 }
 
 function updateTrainCamera(){
@@ -157,6 +196,12 @@ function frame(time){
   const movement={position:p,velocity:navigator.velocity,routeSamples:routeSamples(),travelSpeedMps:rideCamera?journey.state.speed*rideRate:undefined};
   city?.update(movement);
   farCity?.update(movement);
+  cityTerrain?.tick(time);
+  if(cityTerrain&&(time-lastFarUpdate>250)){
+    lastFarUpdate=time;
+    cityTerrain.update(p,{radiusM:FAR_RADIUS_M});
+    skyline?.update(p,{farDistanceM:FAR_RADIUS_M});
+  }
   if(city&&(city.streamer.swaps!==lastBuildingSwaps||farCity?.streamer.swaps!==lastFarSwaps)){
     lastBuildingSwaps=city.streamer.swaps;lastFarSwaps=farCity?.streamer.swaps??-1;
     // Both exports come from one hierarchy. Hide a far page only when the central
@@ -179,7 +224,9 @@ function frame(time){
     lastUI=time;const s=combinedStats(),g=ground(p[0],p[1]);
     $('position').textContent=`${p[0].toFixed(0)} m E · ${p[1].toFixed(0)} m N · ${g===null?'—':(p[2]-g).toFixed(0)+' m above ground'}`;
     if(siteMapMarker){const [x,y]=siteMapPosition(p[0],p[1]);siteMapMarker.setAttribute('cx',x);siteMapMarker.setAttribute('cy',y);}
-    $('status').textContent=s?`${s.unmetDesired?`Refining · ${s.unmetDesired} areas waiting`:'Detail ready'} · ${city.performanceProfile} tier`:'Textured city ready · loading building detail';
+    const far=cityTerrain?.stats();
+    $('status').textContent=(s?`${s.unmetDesired?`Refining · ${s.unmetDesired} areas waiting`:'Detail ready'} · ${city.performanceProfile} tier`:'Textured city ready · loading building detail')+
+      (far?` · far city ${far.tiles}/${far.desired} tiles`:'');
     if(rideCamera){$('location').textContent='NYAMANOTE · FULL LOOP';$('notice').textContent='The train follows the full loop. Choose a station to start another leg.';}
     else if(navigator.mode==='walk')$('notice').textContent=navigator.lastBlock||'Walking follows the ground. Buildings block the way.';
   }
@@ -226,17 +273,19 @@ async function main(){
   if(CITY==='onkyo'){
     const transit=await (await fetch(new URL('../train-route.json',location.href))).json();
     const route=new RailRoute(transit.routes.find(route=>route.id==='loop/inner'));
-    journey=new TrainJourney(route,{startStation:'conservatory',cars:11,carLength:20,maxSpeed:22.22,acceleration:.85,dwell:15});
-    railway=new RailwayView(scene,transit);trainView=new TrainView(scene,journey);
+    journey=new TrainJourney(route,{startStation:'conservatory',cars:9,carLength:20,maxSpeed:22.22,acceleration:.85,dwell:15});
+    stockLibrary=await new StockLibrary().load(FLEET.href,{consists:['nyamanote']});
+    railway=new RailwayView(scene,transit);trainView=new TrainView(scene,journey,{library:stockLibrary,consist:'nyamanote'});
     $('train-station').replaceChildren(...route.stops.map(s=>new Option(s.name.romaji||s.id,s.id)));
     $('train-station').value='conservatory';
     $('train-panel').hidden=false;trainStatus();
   }
-  window.citykit={go,put,ground,centre,setLighting,streamStats:combinedStats,
+  window.citykit={go,put,ground,centre,setLighting,setFarLayerMode,streamStats:combinedStats,
     cameraPose:()=>({position:[...navigator.position],yaw:navigator.yaw,pitch:navigator.pitch,chaseDistance:chaseLook.distance}),
-    streamStatsDetail:()=>({central:city?.stats(),far:farCity?.stats()})};
+    streamStatsDetail:()=>({central:city?.stats(),far:farCity?.stats(),terrain:cityTerrain?.stats(),skyline:skyline?.stats()})};
   window.griffin=window.citykit; // Existing local capture harness.
   $('splash').hidden=true;requestAnimationFrame(frame);
+  void openFarLayers();
   try{
     ktx=new KTX2Loader().setTranscoderPath(new URL('./basis/',import.meta.url).href).setWorkerLimit(2).detectSupport(renderer);
     const memory=globalThis.navigator.deviceMemory||0,requested=new URLSearchParams(location.search).get('profile');
@@ -263,6 +312,7 @@ async function main(){
 
 $('day').onclick=()=>setLighting('golden');
 $('night').onclick=()=>setLighting('night');
+$('far-layer').onchange=()=>setFarLayerMode($('far-layer').value);
 $('train-start').onclick=startRide;
 $('train-outside').onclick=()=>{startRide();journey.time=27;journey.state=journey.evaluate(journey.time);trainView.update();updateTrainCamera();trainStatus();};
 $('train-station').onchange=()=>{if(journey){journey.reset($('train-station').value);journey.playing=false;trainView.update();rideCamera='chase';Object.assign(chaseLook,CHASE_DEFAULT);$('train-camera').value='chase';updateTrainCamera();trainStatus();}};
@@ -298,7 +348,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();taps.clear();held.clear();drag=null;});
-addEventListener('pagehide',()=>{void city?.close();void farCity?.close();ktx?.dispose();signAtlas?.dispose();adapter?.dispose();});
+addEventListener('pagehide',()=>{void city?.close();void farCity?.close();cityTerrain?.close();skyline?.close();trainView?.dispose();stockLibrary?.dispose();ktx?.dispose();signAtlas?.dispose();adapter?.dispose();});
 addEventListener('resize',()=>{if(!renderer)return;renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 if(innerWidth<640){$('panel').removeAttribute('data-open');$('panel-toggle').setAttribute('aria-expanded','false');}
 main().catch(fail);
