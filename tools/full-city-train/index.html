@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Griffin in CityKit</title>
+<!--og-->
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="CityKit">
+<meta property="og:title" content="Griffin, Georgia · CityKit">
+<meta property="og:description" content="Walk or fly through Griffin, Georgia, rebuilt by CityKit from OpenStreetMap and USGS elevation data.">
+<meta property="og:url" content="https://citykit.technoascetic.com/demo/">
+<meta property="og:image" content="https://citykit.technoascetic.com/og/og-griffin.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Griffin, Georgia, from the air in late sun: the town&#x27;s streets with generated buildings on the rolling ground.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Griffin, Georgia · CityKit">
+<meta name="twitter:description" content="Walk or fly through Griffin, Georgia, rebuilt by CityKit from OpenStreetMap and USGS elevation data.">
+<meta name="twitter:image" content="https://citykit.technoascetic.com/og/og-griffin.jpg">
+<meta name="twitter:image:alt" content="Griffin, Georgia, from the air in late sun: the town&#x27;s streets with generated buildings on the rolling ground.">
+<meta name="theme-color" content="#9a6b3f">
+<link rel="canonical" href="https://citykit.technoascetic.com/demo/">
+<!--/og-->
+<meta name="description" content="Walk or fly through Griffin, Georgia, rebuilt by CityKit from OpenStreetMap and USGS 3DEP data.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=IBM+Plex+Mono:wght@400&family=Public+Sans:wght@400;600&display=swap">
+<link rel="stylesheet" href="demo.css">
+</head>
+<body data-mode="fly">
+<canvas id="view" tabindex="0" aria-label="Explore the city in 3D. Drag to look around; use W A S D or the arrow keys to move."></canvas>
+
+<aside id="panel" data-open>
+  <div class="panel-head">
+    <a class="back" href="../">CityKit</a>
+    <button id="panel-toggle" class="icon" aria-expanded="true" aria-controls="panel-body" aria-label="Show or hide controls">☰</button>
+  </div>
+  <div id="panel-body">
+    <label for="city">City</label>
+    <select id="city"><option value="griffin">Griffin, Georgia</option><option value="onkyo">Onkyō</option></select>
+    <h1 id="city-name">Griffin, Georgia</h1>
+    <p id="coverage" class="data">Loading…</p>
+    <div class="modes" role="group" aria-label="How to move">
+      <button id="walk" aria-pressed="false">Walk</button>
+      <button id="fly" aria-pressed="true">Fly</button>
+    </div>
+    <div class="modes" role="group" aria-label="Time of day">
+      <button id="day" aria-pressed="true">Golden hour</button>
+      <button id="night" aria-pressed="false">Night</button>
+    </div>
+    <label for="place">Go to</label>
+    <select id="place"></select>
+    <section id="train-panel" hidden>
+      <label>Nyamanote train · full city loop</label>
+      <select id="train-station" aria-label="Start station"></select>
+      <div class="modes"><button id="train-start">Ride train</button><button id="train-pause">Pause</button><button id="train-exit">Fly</button></div>
+      <button id="train-outside">Skip 27 seconds into this leg</button>
+      <div class="modes"><select id="train-camera" aria-label="Train camera"><option value="chase">Chase</option><option value="passenger">Passenger window</option></select><select id="train-rate" aria-label="Train speed"><option value="1">1× ride</option><option value="2">2× stress</option><option value="4">4× stress</option></select></div>
+      <p class="hint">Chase: drag to orbit, scroll to zoom. Passenger: drag to look.</p>
+      <p id="train-status" class="data"></p><p id="train-progress" class="data"></p>
+    </section>
+    <details id="site-map" hidden><summary>Site map · outlines only</summary><svg id="site-outlines" role="img" aria-label="Onkyō site footprints and current position" viewBox="0 0 300 220"></svg></details>
+    <p class="hint">Drag to look. W A S D or arrows to move. Shift is faster.<br><span class="fly-only">Space or E to rise, Z or Q to descend.</span></p>
+    <p class="hint" id="placeholder-note">Buildings and signs: CityKit's Japan set, used as a placeholder. A US set is coming.</p>
+    <p id="notice" role="status"></p>
+    <p id="status" class="data" role="status">Loading…</p>
+  </div>
+</aside>
+
+<div class="pad" aria-hidden="true">
+  <button data-key="KeyW" tabindex="-1">▲</button>
+  <button data-key="KeyA" tabindex="-1">◀</button><button data-key="KeyS" tabindex="-1">▼</button><button data-key="KeyD" tabindex="-1">▶</button>
+  <button data-key="Space" class="fly-only" tabindex="-1">Up</button><button data-key="KeyZ" class="fly-only" tabindex="-1">Down</button>
+</div>
+
+<footer>
+  <span id="location" class="where">Above downtown</span>
+  <span id="position" class="data"></span>
+  <span class="credit" id="credit">© <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a> · OSM data under <a href="https://opendatacommons.org/licenses/odbl/" target="_blank" rel="noopener">ODbL</a> · Elevation and lidar: <a href="https://www.usgs.gov/3d-elevation-program" target="_blank" rel="noopener">USGS 3DEP</a></span>
+</footer>
+
+<div id="splash">
+  <p class="eyebrow">CITYKIT · EXPLORE</p>
+  <h2>Loading city</h2>
+  <p id="progress">Starting…</p>
+</div>
+<noscript><p class="noscript">The Griffin demo needs JavaScript and WebGL2.</p></noscript>
+<script type="module" src="app.js?v=5"></script>
+</body>
+</html>
