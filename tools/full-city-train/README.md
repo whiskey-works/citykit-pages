@@ -37,3 +37,11 @@ outlines but are never drawn. The preview currently shows a proxy train, and
 track/platform alignment is unfinished. This is a functional full-loop ride,
 not a whole-lap performance certification. Streaming tuning and representative
 far impostors remain follow-up work.
+
+For a local trial of the CityKit horizon candidate, pass `--city-terrain`
+pointing to its `city-terrain.json` and `--skyline` pointing to its
+`skyline.json` when preparing the preview. Build the viewer against the same
+CityKit branch. The **Experimental far city** selector compares the height
+field beyond nearby textured detail, the whole field, and the baseline
+without it while the train runs. The generated horizon remains local; this
+preview does not publish it or certify its visual swap thresholds.
