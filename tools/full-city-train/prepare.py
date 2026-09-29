@@ -99,6 +99,7 @@ def main() -> None:
     p.add_argument("--blob-root", type=Path, help="directory holding the hierarchy's blobs/ (defaults to hierarchy parent)")
     p.add_argument("--fallback-manifest", type=Path, required=True, help="full-city CityKit streaming manifest.json")
     p.add_argument("--route", type=Path, required=True, help="CityKit transit export with the Nyamanote loop")
+    p.add_argument("--fleet", type=Path, required=True, help="built rolling-stock fleet.json with Nyamanote cars")
     p.add_argument("--city-terrain", type=Path, help="optional city-terrain.json and its published pages")
     p.add_argument("--skyline", type=Path, help="optional skyline.json from the same city build")
     p.add_argument("--out", type=Path, required=True, help="local preview directory, outside site/")
@@ -118,6 +119,19 @@ def main() -> None:
     loop = next((r for r in route["routes"] if r.get("id") == "loop/inner"), None)
     if loop is None:
         raise ValueError("Transit export has no loop/inner route")
+    fleet = json.loads(args.fleet.read_text())
+    consist = fleet.get("consists", {}).get("nyamanote")
+    if not consist:
+        raise ValueError("Rolling-stock fleet has no nyamanote consist")
+    stock_dir = out / "rolling-stock"
+    stock_dir.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(args.fleet, stock_dir / "fleet.json")
+    for asset in {row["asset"] for row in consist["cars"]}:
+        manifest = Path(fleet["cars"][asset])
+        if manifest.is_absolute() or ".." in manifest.parts:
+            raise ValueError(f"Invalid rolling-stock path: {manifest}")
+        source_dir = args.fleet.parent / manifest.parent
+        shutil.copytree(source_dir, stock_dir / manifest.parent, dirs_exist_ok=True)
     points = loop["points"][::10] + loop["points"][-1:]
     source = json.loads(args.hierarchy.read_text())
     by_id = {n["id"]: n for n in source["nodes"]}

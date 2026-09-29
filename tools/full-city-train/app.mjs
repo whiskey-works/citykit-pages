@@ -8,6 +8,7 @@ import {ThreeCityAdapter,toRender} from '../citykit/three-adapter.mjs';
 import {CityNavigator,heightAt,insideBuilding} from '../citykit/navigation.mjs';
 import {RailRoute,TrainJourney} from '../citykit/transit.mjs';
 import {RailwayView,TrainView} from '../citykit/transit-three.mjs';
+import {StockLibrary} from '../citykit/rolling-stock-three.mjs';
 import {openCityTerrain} from '../citykit/city-terrain.mjs';
 import {openSkyline} from '../citykit/skyline.mjs';
 
@@ -20,9 +21,10 @@ const FAR=null;
 const SIGNS=new URL(`../data/${DATA}/signs/`,location.href);
 const TERRAIN=new URL('../horizon/city-terrain.json',location.href);
 const SKYLINE=new URL('../horizon/skyline.json',location.href);
+const FLEET=new URL('../rolling-stock/fleet.json',location.href);
 const keys=new Set(),taps=new Set(),held=new Set();
 let place,manifest,fallback,adapter,city,farCity,navigator,renderer,scene,camera,sun,ambient,ktx,signAtlas,last=0,lastUI=0,lastFarUpdate=0,drag=null,lighting='golden',siteMapMarker,siteMapPosition;
-let journey,trainView,railway,rideCamera=null,rideRate=1;
+let journey,trainView,stockLibrary,railway,rideCamera=null,rideRate=1;
 let cityTerrain,skyline,farLayerMode='far';
 const FAR_RING_M=700,FAR_BLEND_M=300,FAR_RADIUS_M=6500;
 const rideLook={yaw:0,pitch:0};
@@ -271,8 +273,9 @@ async function main(){
   if(CITY==='onkyo'){
     const transit=await (await fetch(new URL('../train-route.json',location.href))).json();
     const route=new RailRoute(transit.routes.find(route=>route.id==='loop/inner'));
-    journey=new TrainJourney(route,{startStation:'conservatory',cars:11,carLength:20,maxSpeed:22.22,acceleration:.85,dwell:15});
-    railway=new RailwayView(scene,transit);trainView=new TrainView(scene,journey);
+    journey=new TrainJourney(route,{startStation:'conservatory',cars:9,carLength:20,maxSpeed:22.22,acceleration:.85,dwell:15});
+    stockLibrary=await new StockLibrary().load(FLEET.href,{consists:['nyamanote']});
+    railway=new RailwayView(scene,transit);trainView=new TrainView(scene,journey,{library:stockLibrary,consist:'nyamanote'});
     $('train-station').replaceChildren(...route.stops.map(s=>new Option(s.name.romaji||s.id,s.id)));
     $('train-station').value='conservatory';
     $('train-panel').hidden=false;trainStatus();
@@ -345,7 +348,7 @@ addEventListener('keydown',e=>{
 });
 addEventListener('keyup',e=>keys.delete(e.code));
 addEventListener('blur',()=>{keys.clear();taps.clear();held.clear();drag=null;});
-addEventListener('pagehide',()=>{void city?.close();void farCity?.close();cityTerrain?.close();skyline?.close();ktx?.dispose();signAtlas?.dispose();adapter?.dispose();});
+addEventListener('pagehide',()=>{void city?.close();void farCity?.close();cityTerrain?.close();skyline?.close();trainView?.dispose();stockLibrary?.dispose();ktx?.dispose();signAtlas?.dispose();adapter?.dispose();});
 addEventListener('resize',()=>{if(!renderer)return;renderer.setSize(innerWidth,innerHeight);camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();});
 if(innerWidth<640){$('panel').removeAttribute('data-open');$('panel-toggle').setAttribute('aria-expanded','false');}
 main().catch(fail);
